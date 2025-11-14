@@ -42,56 +42,52 @@ export function AuthPage({ isSignin }: AuthPageProps) {
     });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://omdraw.onrender.com";
 
-    try {
-      const endpoint = isSignin
-  ? "http://localhost:3001/signin"
-  : "http://localhost:3001/signup";
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
-      const body = isSignin
-        ? { email, password }
-        : { name, email, password };
+  try {
+    const endpoint = isSignin
+      ? `${API_BASE}/signin`
+      : `${API_BASE}/signup`;
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+    const body = isSignin
+      ? { email, password }
+      : { name, email, password };
 
-      const data = await res.json();
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-      if (!res.ok) {
-        alert(data.message || "Something went wrong!");
-      } else {
-        alert(
-          isSignin
-            ? "Signed in successfully!"
-            : "Account created successfully!"
-        );
+    const data = await res.json();
 
-        // Save JWT token if provided
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-        }
+    if (!res.ok) {
+      alert(data.message || "Something went wrong!");
+    } else {
+      alert(isSignin ? "Signed in successfully!" : "Account created successfully!");
 
-        //  Redirect to /canvas/123 after Signin
-        if (isSignin) {
-          router.push("/canvas/123");
-        } else {
-          // Optional: after signup, go to signin page
-          router.push("/signin");
-        }
+      if (data.token) {
+        localStorage.setItem("token", data.token);
       }
-    } catch (error) {
-      console.error("Auth error:", error);
-      alert("Network error. Please try again.");
-    } finally {
-      setLoading(false);
+
+      if (isSignin) {
+        router.push("/canvas/123");
+      } else {
+        router.push("/signin");
+      }
     }
-  };
+  } catch (error) {
+    console.error("Auth error:", error);
+    alert("Network error. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div
