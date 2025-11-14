@@ -1,6 +1,7 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import cors from "cors";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { middleware } from "./middleware";
 import {
@@ -11,9 +12,19 @@ import {
 import { prismaClient } from "@repo/db/client";
 
 const app = express();
+app.use(express.json());
+app.use(
+  cors({
+    origin: "*", // you can restrict this later for security
+    methods: ["GET", "POST"],
+  })
+);
 
+// ------------------ AUTH ROUTES ------------------
+
+// Signup
 app.post("/signup", async (req, res) => {
-    const parsedData = CreateUserSchema.safeParse(req.body);
+  const parsedData = CreateUserSchema.safeParse(req.body);
   if (!parsedData.success) {
     return res.status(400).json({ message: "Invalid input data" });
   }
@@ -51,9 +62,9 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-
+// Signin
 app.post("/signin", async (req, res) => {
-    const parsedData = SigninSchema.safeParse(req.body);
+  const parsedData = SigninSchema.safeParse(req.body);
   if (!parsedData.success) {
     return res.status(400).json({ message: "Invalid input data" });
   }
@@ -80,10 +91,12 @@ app.post("/signin", async (req, res) => {
     console.error("Signin error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-})
+});
+
+// ------------------ ROOM ROUTES ------------------
 
 app.post("/room", middleware, async (req, res) => {
-    const parsedData = CreateRoomSchema.safeParse(req.body);
+  const parsedData = CreateRoomSchema.safeParse(req.body);
   if (!parsedData.success) {
     return res.status(400).json({ message: "Invalid room data" });
   }
@@ -106,7 +119,9 @@ app.post("/room", middleware, async (req, res) => {
     console.error("Room creation error:", error);
     res.status(409).json({ message: "Room already exists" });
   }
-})
+});
+
+// ------------------ CHAT ROUTES ------------------
 
 app.get("/chats/:roomId", async (req, res) => {
   const roomId = Number(req.params.roomId);
@@ -143,4 +158,7 @@ app.get("/room/:slug", async (req, res) => {
   }
 });
 
-app.listen(3001);
+// ------------------ SERVER LISTEN ------------------
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
