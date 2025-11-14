@@ -1,5 +1,5 @@
 {
-  "name": "OmDraw",
+  "name": "omdraw",
   "private": true,
   "scripts": {
     "build": "turbo run build",
