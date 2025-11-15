@@ -107,7 +107,7 @@ export default function Home() {
           A simple way to work with data and visualize ideas
         </p>
 
-        <Link href="/canvas/123" className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
+        <Link href="/canvas/0" className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
           isDark ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'
         }`}>
           Get Started

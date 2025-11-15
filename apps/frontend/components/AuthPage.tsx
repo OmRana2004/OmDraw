@@ -75,7 +75,7 @@ const handleSubmit = async (e: FormEvent) => {
       }
 
       if (isSignin) {
-        router.push("/canvas/123");
+        router.push("/canvas/1");
       } else {
         router.push("/signin");
       }
