@@ -101,9 +101,15 @@ export class Draw {
     this.ctx.beginPath();
     this.ctx.moveTo(x1, y1);
     this.ctx.lineTo(x2, y2);
-    this.ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+    this.ctx.lineTo(
+      x2 - headLength * Math.cos(angle - Math.PI / 6),
+      y2 - headLength * Math.sin(angle - Math.PI / 6)
+    );
     this.ctx.moveTo(x2, y2);
-    this.ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+    this.ctx.lineTo(
+      x2 - headLength * Math.cos(angle + Math.PI / 6),
+      y2 - headLength * Math.sin(angle + Math.PI / 6)
+    );
     this.ctx.stroke();
     this.ctx.closePath();
   }
@@ -154,57 +160,55 @@ export class Draw {
   }
 
   private initInputHandlers() {
-  const getPos = (e: MouseEvent | TouchEvent) => {
-    const rect = this.canvas.getBoundingClientRect();
-    let clientX = 0;
-    let clientY = 0;
+    const getPos = (e: MouseEvent | TouchEvent) => {
+      const rect = this.canvas.getBoundingClientRect();
+      let clientX = 0;
+      let clientY = 0;
 
-    if (e instanceof MouseEvent) {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    } else if (e instanceof TouchEvent && e.touches[0]) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    }
+      if (e instanceof MouseEvent) {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      } else if (e instanceof TouchEvent && e.touches[0]) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
 
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top,
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top,
+      };
     };
-  };
 
-  const start = (e: MouseEvent | TouchEvent) => {
-    e.preventDefault(); // critical for touch
-    const pos = getPos(e);
-    this.clicked = true;
-    this.startX = pos.x;
-    this.startY = pos.y;
+    const start = (e: MouseEvent | TouchEvent) => {
+      e.preventDefault();
+      const pos = getPos(e);
+      this.clicked = true;
+      this.startX = pos.x;
+      this.startY = pos.y;
 
-    if (this.selectedTool === "pencil") {
-      this.lastX = this.startX;
-      this.lastY = this.startY;
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.lastX, this.lastY);
-    } else if (this.selectedTool === "eraser") {
-      this.eraseAt(this.startX, this.startY);
-    }
-  };
+      if (this.selectedTool === "pencil") {
+        this.lastX = this.startX;
+        this.lastY = this.startY;
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.lastX, this.lastY);
+      } else if (this.selectedTool === "eraser") {
+        this.eraseAt(this.startX, this.startY);
+      }
+    };
 
     const move = (e: MouseEvent | TouchEvent) => {
-    if (!this.clicked) return;
-    e.preventDefault(); // critical for touch
-    const pos = getPos(e);
-    const currentX = pos.x;
-    const currentY = pos.y;
+      if (!this.clicked) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      const currentX = pos.x;
+      const currentY = pos.y;
 
       if (this.selectedTool === "pencil") {
         this.ctx.strokeStyle = "rgba(255,255,255)";
         this.ctx.lineWidth = 2;
         this.ctx.lineTo(currentX, currentY);
         this.ctx.stroke();
-
-        const shape: Shape = { type: "pencil", startX: this.lastX, startY: this.lastY, endX: currentX, endY: currentY };
-        this.existingShapes.push(shape);
+        this.existingShapes.push({ type: "pencil", startX: this.lastX, startY: this.lastY, endX: currentX, endY: currentY });
         this.lastX = currentX;
         this.lastY = currentY;
         return;
@@ -215,19 +219,18 @@ export class Draw {
         return;
       }
 
-      // Live preview for shapes
       this.clearCanvas();
       const width = currentX - this.startX;
       const height = currentY - this.startY;
 
-      switch(this.selectedTool) {
+      switch (this.selectedTool) {
         case "square":
           this.ctx.strokeRect(this.startX, this.startY, width, height);
           break;
         case "circle":
-          const centerX = this.startX + width/2;
-          const centerY = this.startY + height/2;
-          const radius = Math.sqrt(width*width + height*height)/2;
+          const centerX = this.startX + width / 2;
+          const centerY = this.startY + height / 2;
+          const radius = Math.sqrt(width*width + height*height) / 2;
           this.ctx.beginPath();
           this.ctx.arc(centerX, centerY, radius, 0, Math.PI*2);
           this.ctx.stroke();
@@ -235,9 +238,9 @@ export class Draw {
           break;
         case "triangle":
           this.ctx.beginPath();
-          this.ctx.moveTo(this.startX, currentY);
-          this.ctx.lineTo(currentX, currentY);
-          this.ctx.lineTo(this.startX + width/2, this.startY);
+          this.ctx.moveTo(this.startX, this.startY);
+          this.ctx.lineTo(this.startX + width, this.startY + height);
+          this.ctx.lineTo(this.startX - width, this.startY + height);
           this.ctx.closePath();
           this.ctx.stroke();
           break;
@@ -268,13 +271,18 @@ export class Draw {
           shape = { type: "rect", x: this.startX, y: this.startY, width, height };
           break;
         case "circle":
-          const centerX = this.startX + width/2;
-          const centerY = this.startY + height/2;
-          const radius = Math.sqrt(width*width + height*height)/2;
+          const centerX = this.startX + width / 2;
+          const centerY = this.startY + height / 2;
+          const radius = Math.sqrt(width*width + height*height) / 2;
           shape = { type: "circle", centerX, centerY, radius };
           break;
         case "triangle":
-          shape = { type: "triangle", x1: this.startX, y1: endY, x2: endX, y2: endY, x3: this.startX + width/2, y3: this.startY };
+          shape = {
+            type: "triangle",
+            x1: this.startX, y1: this.startY,
+            x2: this.startX + width, y2: this.startY + height,
+            x3: this.startX - width, y3: this.startY + height
+          };
           break;
         case "arrow":
           shape = { type: "arrow", startX: this.startX, startY: this.startY, endX, endY };
@@ -293,14 +301,14 @@ export class Draw {
 
     // Mouse
     this.canvas.addEventListener("mousedown", start);
-  this.canvas.addEventListener("mousemove", move);
-  this.canvas.addEventListener("mouseup", end);
-  this.canvas.addEventListener("mouseleave", end);
+    this.canvas.addEventListener("mousemove", move);
+    this.canvas.addEventListener("mouseup", end);
+    this.canvas.addEventListener("mouseleave", end);
 
-  // Touch events
-  this.canvas.addEventListener("touchstart", start, { passive: false });
-  this.canvas.addEventListener("touchmove", move, { passive: false });
-  this.canvas.addEventListener("touchend", end, { passive: false });
-  this.canvas.addEventListener("touchcancel", end, { passive: false });
-}
+    // Touch
+    this.canvas.addEventListener("touchstart", start, { passive: false });
+    this.canvas.addEventListener("touchmove", move, { passive: false });
+    this.canvas.addEventListener("touchend", end, { passive: false });
+    this.canvas.addEventListener("touchcancel", end, { passive: false });
+  }
 }
