@@ -154,42 +154,48 @@ export class Draw {
   }
 
   private initInputHandlers() {
-    const getPos = (e: MouseEvent | TouchEvent) => {
-      const rect = this.canvas.getBoundingClientRect();
-      let clientX = 0;
-      let clientY = 0;
-      if (e instanceof MouseEvent) {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      } else if (e instanceof TouchEvent && e.touches[0]) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-      }
-      return { x: clientX - rect.left, y: clientY - rect.top };
-    };
+  const getPos = (e: MouseEvent | TouchEvent) => {
+    const rect = this.canvas.getBoundingClientRect();
+    let clientX = 0;
+    let clientY = 0;
 
-    const start = (e: MouseEvent | TouchEvent) => {
-      e.preventDefault();
-      const pos = getPos(e);
-      this.clicked = true;
-      this.startX = pos.x;
-      this.startY = pos.y;
+    if (e instanceof MouseEvent) {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    } else if (e instanceof TouchEvent && e.touches[0]) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    }
 
-      if (this.selectedTool === "pencil") {
-        this.lastX = this.startX;
-        this.lastY = this.startY;
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.lastX, this.lastY);
-      } else if (this.selectedTool === "eraser") {
-        this.eraseAt(this.startX, this.startY);
-      }
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
     };
+  };
+
+  const start = (e: MouseEvent | TouchEvent) => {
+    e.preventDefault(); // critical for touch
+    const pos = getPos(e);
+    this.clicked = true;
+    this.startX = pos.x;
+    this.startY = pos.y;
+
+    if (this.selectedTool === "pencil") {
+      this.lastX = this.startX;
+      this.lastY = this.startY;
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.lastX, this.lastY);
+    } else if (this.selectedTool === "eraser") {
+      this.eraseAt(this.startX, this.startY);
+    }
+  };
 
     const move = (e: MouseEvent | TouchEvent) => {
-      if (!this.clicked) return;
-      const pos = getPos(e);
-      const currentX = pos.x;
-      const currentY = pos.y;
+    if (!this.clicked) return;
+    e.preventDefault(); // critical for touch
+    const pos = getPos(e);
+    const currentX = pos.x;
+    const currentY = pos.y;
 
       if (this.selectedTool === "pencil") {
         this.ctx.strokeStyle = "rgba(255,255,255)";
@@ -287,14 +293,14 @@ export class Draw {
 
     // Mouse
     this.canvas.addEventListener("mousedown", start);
-    this.canvas.addEventListener("mousemove", move);
-    this.canvas.addEventListener("mouseup", end);
-    this.canvas.addEventListener("mouseleave", end);
+  this.canvas.addEventListener("mousemove", move);
+  this.canvas.addEventListener("mouseup", end);
+  this.canvas.addEventListener("mouseleave", end);
 
-    // Touch
-    this.canvas.addEventListener("touchstart", start);
-    this.canvas.addEventListener("touchmove", move);
-    this.canvas.addEventListener("touchend", end);
-    this.canvas.addEventListener("touchcancel", end);
-  }
+  // Touch events
+  this.canvas.addEventListener("touchstart", start, { passive: false });
+  this.canvas.addEventListener("touchmove", move, { passive: false });
+  this.canvas.addEventListener("touchend", end, { passive: false });
+  this.canvas.addEventListener("touchcancel", end, { passive: false });
+}
 }
