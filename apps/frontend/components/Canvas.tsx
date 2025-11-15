@@ -23,6 +23,19 @@ export function Canvas({ roomId, socket }: CanvasProps) {
     if (canvasRef.current) {
       const d = new Draw(canvasRef.current, roomId, socket);
       setDraw(d);
+
+      // Disable scrolling on mobile when touching the canvas
+      const canvas = canvasRef.current;
+      const preventScroll = (e: TouchEvent) => e.preventDefault();
+      canvas.addEventListener("touchstart", preventScroll, { passive: false });
+      canvas.addEventListener("touchmove", preventScroll, { passive: false });
+      canvas.addEventListener("touchend", preventScroll, { passive: false });
+
+      return () => {
+        canvas.removeEventListener("touchstart", preventScroll);
+        canvas.removeEventListener("touchmove", preventScroll);
+        canvas.removeEventListener("touchend", preventScroll);
+      };
     }
   }, [canvasRef]);
 
@@ -32,12 +45,13 @@ export function Canvas({ roomId, socket }: CanvasProps) {
         ref={canvasRef}
         width={window.innerWidth}
         height={window.innerHeight}
-        className="absolute top-0 left-0"
+        className="absolute top-0 left-0 touch-none"
       />
       <Topbar setSelectedTool={setSelectedTool} selectedTool={selectedTool} />
     </div>
   );
 }
+
 
 function Topbar({
   selectedTool,
