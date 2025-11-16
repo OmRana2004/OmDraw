@@ -1,32 +1,52 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
-
-import { Circle, Pencil, Square, ArrowRight, Eraser, Hand, Triangle } from "lucide-react";
+import {
+  Circle,
+  Pencil,
+  Square,
+  ArrowRight,
+  Eraser,
+  Hand,
+  Triangle,
+  Menu,
+} from "lucide-react";
 import { Draw } from "@/draw/Draw";
-
+import Sidebar from "@/components/Sidebar"; 
 type CanvasProps = {
   roomId: string;
   socket: WebSocket;
 };
 
-export type Tool = "pencil" | "square" | "triangle" | "circle" | "arrow" | "eraser" | "hand";
+export type Tool =
+  | "pencil"
+  | "square"
+  | "triangle"
+  | "circle"
+  | "arrow"
+  | "eraser"
+  | "hand";
 
 export function Canvas({ roomId, socket }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [draw, setDraw] = useState<Draw>();
   const [selectedTool, setSelectedTool] = useState<Tool>("pencil");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Change tool inside draw class
   useEffect(() => {
     draw?.setTool(selectedTool);
   }, [selectedTool]);
 
+  // Create drawing instance
   useEffect(() => {
     if (canvasRef.current) {
       const d = new Draw(canvasRef.current, roomId, socket);
       setDraw(d);
 
-      // Disable scrolling on mobile when touching the canvas
       const canvas = canvasRef.current;
       const preventScroll = (e: TouchEvent) => e.preventDefault();
+
       canvas.addEventListener("touchstart", preventScroll, { passive: false });
       canvas.addEventListener("touchmove", preventScroll, { passive: false });
       canvas.addEventListener("touchend", preventScroll, { passive: false });
@@ -41,18 +61,37 @@ export function Canvas({ roomId, socket }: CanvasProps) {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-neutral-950">
+      {/* Canvas */}
       <canvas
         ref={canvasRef}
         width={window.innerWidth}
         height={window.innerHeight}
         className="absolute top-0 left-0 touch-none"
       />
+
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClearCanvas={() => draw?.clearCanvas()}
+        onLiveCollab={() => alert("Live collaboration coming soon")}
+        onLogout={() => alert("Logout clicked")}
+      />
+
+      {/* Sidebar Toggle Button */}
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="absolute top-5 left-5 z-50 p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
+      {/* Tool Topbar */}
       <Topbar setSelectedTool={setSelectedTool} selectedTool={selectedTool} />
     </div>
   );
 }
 
-
+// 🔥 Topbar (unchanged)
 function Topbar({
   selectedTool,
   setSelectedTool,
@@ -98,7 +137,6 @@ function Topbar({
           active={selectedTool === "hand"}
           onClick={() => setSelectedTool("hand")}
         />
-        
       </div>
     </div>
   );
