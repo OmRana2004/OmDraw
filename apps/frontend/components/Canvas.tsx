@@ -72,7 +72,7 @@ export function Canvas({ roomId, socket }: CanvasProps) {
       {/* Sidebar */}
       <Sidebar
         isOpen={isSidebarOpen}
-        onClearCanvas={() => draw?.clearCanvas()}
+        onClearCanvas={() => draw?.wipeAll()}
         onLiveCollab={() => alert("Live collaboration coming soon")}
         onLogout={() => alert("Logout clicked")}
       />
