@@ -16,8 +16,8 @@ import Sidebar from "@/components/Sidebar";
 
 type CanvasProps = {
   roomId: string;
-  socket: WebSocket | null;   // ← IMPORTANT: allow null for guests
-  guestMode?: boolean;        // ← NEW FLAG
+  socket: WebSocket | null; // ← IMPORTANT: allow null for guests
+  guestMode?: boolean; // ← NEW FLAG
 };
 
 export type Tool =
@@ -81,9 +81,20 @@ export function Canvas({ roomId, socket, guestMode = false }: CanvasProps) {
             ? alert("Login required for live collaboration.")
             : alert("Live collaboration coming soon")
         }
-        onLogout={() =>
-          guestMode ? alert("Guest mode cannot logout") : alert("Logout clicked")
-        }
+        onLogout={() => {
+          if (guestMode) {
+            alert("Guest mode cannot logout");
+            return;
+          }
+          // WebSocket Closed
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close();
+          }
+          // token Clear
+          localStorage.removeItem("token");
+          // Redirect to homepage
+          window.location.href = "/";
+        }}
       />
 
       {/* Sidebar Toggle Button */}

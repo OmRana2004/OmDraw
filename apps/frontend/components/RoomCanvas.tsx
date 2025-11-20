@@ -60,7 +60,7 @@ export function RoomCanvas({ roomId }: { roomId: string }) {
   }
 
   if (!socket) {
-    return <div>Failed to connect to server. Please refresh.</div>;
+    return <div>Failed to connect to server.. Try to login again!</div>;
   }
 
   return <Canvas roomId={roomId} socket={socket} />;

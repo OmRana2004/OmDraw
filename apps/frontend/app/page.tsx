@@ -175,7 +175,7 @@ export default function Home() {
   </Link>
 
   <Link
-     href="/guest/123"
+     href="/guest/0"
     className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
       isDark
         ? "bg-white text-gray-900 hover:bg-gray-100"
