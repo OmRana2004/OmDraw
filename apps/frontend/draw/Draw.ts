@@ -41,13 +41,20 @@ export class Draw {
   private selectedTool: Tool = "pencil";
   private eraserRadius = 25;
 
-  socket: WebSocket;
+  socket: WebSocket | null;        // socket is now optional
+  guestMode: boolean;              // NEW FLAG
 
-  constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    roomId: string,
+    socket: WebSocket | null,
+    guestMode: boolean = false
+  ) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d")!;
     this.roomId = roomId;
-    this.socket = socket;
+    this.socket = socket;          // may be null for guest
+    this.guestMode = guestMode;    // true for GuestCanvas
 
     this.init();
     this.initHandlers();
@@ -59,23 +66,29 @@ export class Draw {
   }
 
   private async init() {
-    this.existingShapes = await getExistingShapes(this.roomId);
+    if (!this.guestMode) {
+      // Only fetch shapes if user is logged in / collab mode
+      this.existingShapes = await getExistingShapes(this.roomId);
+    } else {
+      this.existingShapes = []; // Guest starts with empty canvas
+    }
+
     this.clearCanvas();
   }
 
-  //  WebSocket handlers
+  // WS handlers only if socket exists
   private initHandlers() {
+    if (!this.socket) return; // guest mode → skip
+
     this.socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
 
-      // 🔥 When someone clears the canvas
       if (message.type === "clear") {
         this.existingShapes = [];
         this.clearCanvas();
         return;
       }
 
-      // When someone draws a shape
       if (message.type === "chat") {
         const parsedShape = JSON.parse(message.message);
         this.existingShapes.push(parsedShape.shape);
@@ -84,7 +97,7 @@ export class Draw {
     };
   }
 
-  // Clear canvas AND redraw all shapes
+  // Clear + redraw shapes
   public clearCanvas() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.fillStyle = "rgba(0,0,0)";
@@ -97,6 +110,7 @@ export class Draw {
         case "rect":
           this.ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
           break;
+
         case "circle":
           this.ctx.beginPath();
           this.ctx.arc(
@@ -107,8 +121,8 @@ export class Draw {
             Math.PI * 2
           );
           this.ctx.stroke();
-          this.ctx.closePath();
           break;
+
         case "triangle":
           this.ctx.beginPath();
           this.ctx.moveTo(shape.x1, shape.y1);
@@ -117,13 +131,14 @@ export class Draw {
           this.ctx.closePath();
           this.ctx.stroke();
           break;
+
         case "pencil":
           this.ctx.beginPath();
           this.ctx.moveTo(shape.startX, shape.startY);
           this.ctx.lineTo(shape.endX, shape.endY);
           this.ctx.stroke();
-          this.ctx.closePath();
           break;
+
         case "arrow":
           this.drawArrow(shape.startX, shape.startY, shape.endX, shape.endY);
           break;
@@ -132,16 +147,10 @@ export class Draw {
   }
 
   public wipeAll() {
-    // Clear the shapes from memory
     this.existingShapes = [];
+    this.clearCanvas();
 
-    // Clear canvas visually
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.fillStyle = "rgba(0,0,0)";
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    // Notify other users
-    if (this.socket.readyState === WebSocket.OPEN) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(
         JSON.stringify({
           type: "clear",
@@ -158,17 +167,19 @@ export class Draw {
     this.ctx.beginPath();
     this.ctx.moveTo(x1, y1);
     this.ctx.lineTo(x2, y2);
+
     this.ctx.lineTo(
       x2 - headLength * Math.cos(angle - Math.PI / 6),
       y2 - headLength * Math.sin(angle - Math.PI / 6)
     );
+
     this.ctx.moveTo(x2, y2);
+
     this.ctx.lineTo(
       x2 - headLength * Math.cos(angle + Math.PI / 6),
       y2 - headLength * Math.sin(angle + Math.PI / 6)
     );
     this.ctx.stroke();
-    this.ctx.closePath();
   }
 
   private isShapeHit(shape: Shape, x: number, y: number) {
@@ -179,11 +190,15 @@ export class Draw {
         y >= shape.y &&
         y <= shape.y + shape.height
       );
-    } else if (shape.type === "circle") {
+    }
+
+    if (shape.type === "circle") {
       const dx = x - shape.centerX;
       const dy = y - shape.centerY;
       return Math.sqrt(dx * dx + dy * dy) <= shape.radius;
-    } else if (shape.type === "arrow" || shape.type === "pencil") {
+    }
+
+    if (shape.type === "arrow" || shape.type === "pencil") {
       return (
         this.pointToLineDistance(
           x,
@@ -194,11 +209,15 @@ export class Draw {
           shape.endY
         ) < this.eraserRadius
       );
-    } else if (shape.type === "triangle") {
+    }
+
+    if (shape.type === "triangle") {
       const { x1, y1, x2, y2, x3, y3 } = shape;
+
       const area = Math.abs(
         (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2.0
       );
+
       const area1 = Math.abs(
         (x * (y2 - y3) + x2 * (y3 - y) + x3 * (y - y2)) / 2.0
       );
@@ -208,8 +227,10 @@ export class Draw {
       const area3 = Math.abs(
         (x1 * (y2 - y) + x2 * (y - y1) + x * (y1 - y2)) / 2.0
       );
+
       return Math.abs(area - (area1 + area2 + area3)) < 0.5;
     }
+
     return false;
   }
 
@@ -227,10 +248,11 @@ export class Draw {
     const D = y2 - y1;
 
     const dot = A * C + B * D;
-    const len_sq = C * C + D * D;
-    const param = len_sq !== 0 ? dot / len_sq : -1;
+    const len = C * C + D * D;
+    const param = len !== 0 ? dot / len : -1;
 
     let xx, yy;
+
     if (param < 0) {
       xx = x1;
       yy = y1;
@@ -242,9 +264,7 @@ export class Draw {
       yy = y1 + param * D;
     }
 
-    const dx = x - xx;
-    const dy = y - yy;
-    return Math.sqrt(dx * dx + dy * dy);
+    return Math.sqrt((x - xx) ** 2 + (y - yy) ** 2);
   }
 
   private eraseAt(x: number, y: number) {
@@ -257,6 +277,7 @@ export class Draw {
   private initInputHandlers() {
     const getPos = (e: MouseEvent | TouchEvent) => {
       const rect = this.canvas.getBoundingClientRect();
+
       let clientX = 0;
       let clientY = 0;
 
@@ -276,6 +297,7 @@ export class Draw {
 
     const start = (e: MouseEvent | TouchEvent) => {
       e.preventDefault();
+
       const pos = getPos(e);
       this.clicked = true;
       this.startX = pos.x;
@@ -286,7 +308,9 @@ export class Draw {
         this.lastY = this.startY;
         this.ctx.beginPath();
         this.ctx.moveTo(this.lastX, this.lastY);
-      } else if (this.selectedTool === "eraser") {
+      }
+
+      if (this.selectedTool === "eraser") {
         this.eraseAt(this.startX, this.startY);
       }
     };
@@ -294,6 +318,7 @@ export class Draw {
     const move = (e: MouseEvent | TouchEvent) => {
       if (!this.clicked) return;
       e.preventDefault();
+
       const pos = getPos(e);
       const currentX = pos.x;
       const currentY = pos.y;
@@ -301,8 +326,10 @@ export class Draw {
       if (this.selectedTool === "pencil") {
         this.ctx.strokeStyle = "rgba(255,255,255)";
         this.ctx.lineWidth = 2;
+
         this.ctx.lineTo(currentX, currentY);
         this.ctx.stroke();
+
         this.existingShapes.push({
           type: "pencil",
           startX: this.lastX,
@@ -310,6 +337,7 @@ export class Draw {
           endX: currentX,
           endY: currentY,
         });
+
         this.lastX = currentX;
         this.lastY = currentY;
         return;
@@ -321,6 +349,7 @@ export class Draw {
       }
 
       this.clearCanvas();
+
       const width = currentX - this.startX;
       const height = currentY - this.startY;
 
@@ -328,15 +357,17 @@ export class Draw {
         case "square":
           this.ctx.strokeRect(this.startX, this.startY, width, height);
           break;
+
         case "circle":
           const centerX = this.startX + width / 2;
           const centerY = this.startY + height / 2;
           const radius = Math.sqrt(width * width + height * height) / 2;
+
           this.ctx.beginPath();
           this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
           this.ctx.stroke();
-          this.ctx.closePath();
           break;
+
         case "triangle":
           this.ctx.beginPath();
           this.ctx.moveTo(this.startX, this.startY);
@@ -345,6 +376,7 @@ export class Draw {
           this.ctx.closePath();
           this.ctx.stroke();
           break;
+
         case "arrow":
           this.drawArrow(this.startX, this.startY, currentX, currentY);
           break;
@@ -361,12 +393,15 @@ export class Draw {
       }
 
       const pos = getPos(e);
+
       const endX = pos.x;
       const endY = pos.y;
+
       const width = endX - this.startX;
       const height = endY - this.startY;
 
       let shape: Shape | null = null;
+
       switch (this.selectedTool) {
         case "square":
           shape = {
@@ -377,12 +412,15 @@ export class Draw {
             height,
           };
           break;
+
         case "circle":
           const centerX = this.startX + width / 2;
           const centerY = this.startY + height / 2;
           const radius = Math.sqrt(width * width + height * height) / 2;
+
           shape = { type: "circle", centerX, centerY, radius };
           break;
+
         case "triangle":
           shape = {
             type: "triangle",
@@ -394,6 +432,7 @@ export class Draw {
             y3: this.startY + height,
           };
           break;
+
         case "arrow":
           shape = {
             type: "arrow",
@@ -406,9 +445,11 @@ export class Draw {
       }
 
       if (!shape) return;
+
       this.existingShapes.push(shape);
 
-      if (this.socket.readyState === WebSocket.OPEN) {
+      // Only send to server if socket exists
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
         this.socket.send(
           JSON.stringify({
             type: "chat",

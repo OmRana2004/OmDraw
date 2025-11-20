@@ -12,10 +12,12 @@ import {
   Menu,
 } from "lucide-react";
 import { Draw } from "@/draw/Draw";
-import Sidebar from "@/components/Sidebar"; 
+import Sidebar from "@/components/Sidebar";
+
 type CanvasProps = {
   roomId: string;
-  socket: WebSocket;
+  socket: WebSocket | null;   // ← IMPORTANT: allow null for guests
+  guestMode?: boolean;        // ← NEW FLAG
 };
 
 export type Tool =
@@ -27,7 +29,7 @@ export type Tool =
   | "eraser"
   | "hand";
 
-export function Canvas({ roomId, socket }: CanvasProps) {
+export function Canvas({ roomId, socket, guestMode = false }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [draw, setDraw] = useState<Draw>();
   const [selectedTool, setSelectedTool] = useState<Tool>("pencil");
@@ -38,12 +40,13 @@ export function Canvas({ roomId, socket }: CanvasProps) {
     draw?.setTool(selectedTool);
   }, [selectedTool]);
 
-  // Create drawing instance
+  // Initialize drawing engine
   useEffect(() => {
     if (canvasRef.current) {
-      const d = new Draw(canvasRef.current, roomId, socket);
+      const d = new Draw(canvasRef.current, roomId, socket, guestMode);
       setDraw(d);
 
+      // Prevent canvas from scrolling on touch devices
       const canvas = canvasRef.current;
       const preventScroll = (e: TouchEvent) => e.preventDefault();
 
@@ -57,7 +60,7 @@ export function Canvas({ roomId, socket }: CanvasProps) {
         canvas.removeEventListener("touchend", preventScroll);
       };
     }
-  }, [canvasRef]);
+  }, [canvasRef, socket, guestMode]);
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-neutral-950">
@@ -73,8 +76,14 @@ export function Canvas({ roomId, socket }: CanvasProps) {
       <Sidebar
         isOpen={isSidebarOpen}
         onClearCanvas={() => draw?.wipeAll()}
-        onLiveCollab={() => alert("Live collaboration coming soon")}
-        onLogout={() => alert("Logout clicked")}
+        onLiveCollab={() =>
+          guestMode
+            ? alert("Login required for live collaboration.")
+            : alert("Live collaboration coming soon")
+        }
+        onLogout={() =>
+          guestMode ? alert("Guest mode cannot logout") : alert("Logout clicked")
+        }
       />
 
       {/* Sidebar Toggle Button */}
@@ -91,7 +100,6 @@ export function Canvas({ roomId, socket }: CanvasProps) {
   );
 }
 
-// 🔥 Topbar (unchanged)
 function Topbar({
   selectedTool,
   setSelectedTool,
