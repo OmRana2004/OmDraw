@@ -42,7 +42,7 @@ export function AuthPage({ isSignin }: AuthPageProps) {
     });
   };
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://omdraw.onrender.com";
+const API_BASE = process.env.NEXT_PUBLIC_HTTP_URL!;
 
 const handleSubmit = async (e: FormEvent) => {
   e.preventDefault();
@@ -50,8 +50,8 @@ const handleSubmit = async (e: FormEvent) => {
 
   try {
     const endpoint = isSignin
-      ? `${API_BASE}/signin`
-      : `${API_BASE}/signup`;
+  ? `${API_BASE}/api/v1/signin`
+  : `${API_BASE}/api/v1/signup`;
 
     const body = isSignin
       ? { email, password }
@@ -71,14 +71,25 @@ const handleSubmit = async (e: FormEvent) => {
       alert(isSignin ? "Signed in successfully!" : "Account created successfully!");
 
       if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
+  localStorage.setItem("token", data.token);
 
-      if (isSignin) {
-        router.push("/canvas/1");
-      } else {
-        router.push("/signin");
-      }
+  // ✅ store user
+  localStorage.setItem(
+    "user",
+    JSON.stringify({
+      id: data.user?.id,
+      name: data.user?.name,
+      email: data.user?.email,
+      isGuest: false,
+    })
+  );
+
+  // ✅ notify sidebar
+  window.dispatchEvent(new Event("auth-changed"));
+
+  // ✅ always go to canvas
+  router.push("/canvas/1");
+}
     }
   } catch (error) {
     console.error("Auth error:", error);
@@ -112,9 +123,8 @@ const handleSubmit = async (e: FormEvent) => {
           className={`absolute bottom-40 left-1/4 w-20 h-20 opacity-40 -rotate-12 ${
             isDark ? "text-green-500" : "text-green-200"
           }`}
-        />
+        /> 
       </div>
-
       {/* Theme toggle */}
       <div className="absolute top-4 right-4 z-10">
         <button onClick={toggleTheme} className="p-2 rounded-lg">

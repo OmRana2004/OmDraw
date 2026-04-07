@@ -9,6 +9,7 @@
     "dev": "npm run build && npm run start"
   },
   "dependencies": {
+    "@repo/common": "*",
     "@types/cors": "^2.8.19",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -18,7 +19,6 @@
   },
   "devDependencies": {
     "@repo/backend-common": "*",
-    "@repo/common": "*",
     "@repo/db": "*",
     "@repo/typescript-config": "*",
     "@types/bcrypt": "^6.0.0",

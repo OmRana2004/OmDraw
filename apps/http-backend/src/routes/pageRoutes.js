@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const signup_1 = require("../controllers/auth/signup");
+const signin_1 = require("../controllers/auth/signin");
+const createRoom_1 = require("../controllers/room/createRoom");
+const getRoom_1 = require("../controllers/room/getRoom");
+const getChat_1 = require("../controllers/chat/getChat");
+const authMiddleware_1 = require("../middlewares/authMiddleware");
+const router = (0, express_1.Router)();
+router.post("/signup", signup_1.signup);
+router.post("/signin", signin_1.signin);
+router.post("/room", authMiddleware_1.authMiddleware, createRoom_1.createRoom);
+router.get("/room/:slug", getRoom_1.getRoom);
+router.get("/chat/:roomId", getChat_1.getChats);
+exports.default = router;

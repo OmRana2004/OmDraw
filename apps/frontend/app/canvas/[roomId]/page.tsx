@@ -1,13 +1,18 @@
+"use client";
 
-import { RoomCanvas } from "@/components/RoomCanvas";
+import { useState } from "react";
+import Canvas from "@/components/canvas/Canvas";
+import Toolbar from "@/components/canvas/Toolbar";
+import Sidebar from "@/components/canvas/Sidebar";
 
-export default async function CanvasPage({ params }: {
-    params: {
-        roomId: string
-    }
-}) {
-    const roomId = (await params).roomId;
+export default function CanvasPage() {
+  const [tool, setTool] = useState("rectangle");
 
-    return <RoomCanvas roomId={roomId} />
-    
+  return (
+    <div className="w-screen h-screen">
+      <Toolbar setTool={setTool} />
+      <Canvas tool={tool} />
+      <Sidebar />
+    </div>
+  );
 }
