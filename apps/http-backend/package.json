@@ -13,6 +13,7 @@
     "@types/cors": "^2.8.19",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "zod": "^4.1.12"
