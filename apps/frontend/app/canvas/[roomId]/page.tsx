@@ -7,12 +7,17 @@ import Sidebar from "@/components/canvas/Sidebar";
 
 export default function CanvasPage() {
   const [tool, setTool] = useState("rectangle");
+  const [clearTrigger, setClearTrigger] = useState(0); // ✅ add this
 
   return (
     <div className="w-screen h-screen">
       <Toolbar setTool={setTool} />
-      <Canvas tool={tool} />
-      <Sidebar />
+
+      {/* ✅ pass clearTrigger */}
+      <Canvas tool={tool} clearTrigger={clearTrigger} />
+
+      {/* ✅ pass onClear */}
+      <Sidebar onClear={() => setClearTrigger(prev => prev + 1)} />
     </div>
   );
 }

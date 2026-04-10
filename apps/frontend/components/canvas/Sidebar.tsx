@@ -16,7 +16,7 @@ import {
   Menu
 } from "lucide-react";
 
-export default function Sidebar() {
+export default function Sidebar({ onClear }: any) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState("dark");
 
@@ -36,9 +36,10 @@ export default function Sidebar() {
     }
   }, [theme]);
 
+  // ✅ CLEAR FUNCTION
   const clearCanvas = () => {
     if (confirm("Clear the entire canvas?")) {
-      window.dispatchEvent(new Event("clear-canvas"));
+      onClear(); // 🔥 parent ko trigger karega
     }
   };
 
@@ -117,6 +118,8 @@ export default function Sidebar() {
     </>
   );
 }
+
+/* ---------------- UI Components ---------------- */
 
 function MenuItem({ icon: Icon, label, shortcut, highlight, onClick }: any) {
   return (

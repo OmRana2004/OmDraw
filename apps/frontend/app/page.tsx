@@ -121,25 +121,15 @@ export default function Home() {
             {/* Navigation Links */}
             <Link
               href="/signup"
-              className={`text-sm transition-colors ${
+              className={`font-semibold transition-colors ${
                 isDark
                   ? "text-gray-300 hover:text-white"
-                  : "text-gray-600 hover:text-gray-900"
+                  : "text-gray-800 hover:text-gray-900"
               }`}
             >
               Sign Up
             </Link>
 
-            <Link
-              href="/signin"
-              className={`text-sm transition-colors ${
-                isDark
-                  ? "text-gray-300 hover:text-white"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Sign In
-            </Link>
           </div>
         </div>
       </nav>

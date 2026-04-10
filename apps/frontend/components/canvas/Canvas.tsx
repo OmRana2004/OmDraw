@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import { drawShapes, Shape } from "./draw";
 
-export default function Canvas({ tool }: any) {
+export default function Canvas({ tool, clearTrigger }: any) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [elements, setElements] = useState<Shape[]>([]);
@@ -71,6 +71,16 @@ export default function Canvas({ tool }: any) {
 
     ctx.restore();
   }, [elements, selectedIndex, pan]);
+
+  /* ---------------- Clear Canvas ---------------- */
+useEffect(() => {
+  setElements([]);
+  setSelectedIndex(null);
+  setEditingTextIndex(null);
+  setDrawing(false);
+  setDragging(false);
+  setResizing(false);
+}, [clearTrigger]);
 
   /* ---------------- Delete ---------------- */
 
@@ -279,16 +289,23 @@ export default function Canvas({ tool }: any) {
     }
 
     if (drawing) {
-      setElements((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          ...updated[updated.length - 1],
-          x2: x,
-          y2: y,
-        };
-        return updated;
-      });
+  setElements((prev) => {
+    const updated = [...prev];
+    const last = updated[updated.length - 1];
+
+    if (last.type === "pencil") {
+      last.points?.push({ x, y }); // ✅ add new point
+    } else {
+      updated[updated.length - 1] = {
+        ...last,
+        x2: x,
+        y2: y,
+      };
     }
+
+    return updated;
+  });
+}
 
     if (dragging && selectedIndex !== null) {
       setElements((prev) => {
