@@ -14,16 +14,16 @@ import {
   Monitor,
   Check,
   SquarePen,
-  Menu
+  Menu,
 } from "lucide-react";
 
 export default function Sidebar({ onClear }: any) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState("dark");
   const router = useRouter();
-const params = useParams();
+  const params = useParams();
 
-const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     if (theme === "dark") {
@@ -31,7 +31,9 @@ const [isLoggedIn, setIsLoggedIn] = useState(false);
     } else if (theme === "light") {
       document.documentElement.classList.remove("dark");
     } else {
-      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const systemDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
 
       if (systemDark) {
         document.documentElement.classList.add("dark");
@@ -42,24 +44,24 @@ const [isLoggedIn, setIsLoggedIn] = useState(false);
   }, [theme]);
 
   useEffect(() => {
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const isGuestRoute = params.roomId === "guest";
+    const isGuestRoute = params.roomId === "guest";
 
-  if (token && !isGuestRoute) {
-    setIsLoggedIn(true); // logged in user
-  } else {
-    setIsLoggedIn(false); // guest
-  }
-}, []);
+    if (token && !isGuestRoute) {
+      setIsLoggedIn(true); // logged in user
+    } else {
+      setIsLoggedIn(false); // guest
+    }
+  }, []);
 
-const handleLogout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
-  router.push("/");
-};
+    router.push("/");
+  };
 
   //  CLEAR FUNCTION
   const clearCanvas = () => {
@@ -91,43 +93,61 @@ const handleLogout = () => {
         }`}
       >
         <div className="flex flex-col w-56 rounded-2xl bg-[#1f1f27] text-gray-200 shadow-xl border border-neutral-800">
-
           {/* MENU */}
           <div className="overflow-auto py-3 px-3 space-y-1">
-            <MenuItem icon={Command} label="Command palette" shortcut="Ctrl+/" />
-            <MenuItem icon={Trash2} label="Clear canvas" onClick={clearCanvas} />
+            <MenuItem
+              icon={Command}
+              label="Command palette"
+              shortcut="Ctrl+/"
+            />
+            <MenuItem
+              icon={Trash2}
+              label="Clear canvas"
+              onClick={clearCanvas}
+            />
             <MenuItem icon={Download} label="Export Drawing" />
             <MenuItem icon={Upload} label="Import Drawing" />
             <MenuItem icon={Share2} label="Live collaboration" />
-            
+
             {isLoggedIn ? (
-  <MenuItem
-  icon={UserPlus}
-  label="Logout"
-  danger
-  onClick={handleLogout}
-/>
-) : (
-  <MenuItem
-    icon={UserPlus}
-    label="Login"
-    highlight
-    onClick={() => router.push("/signin")}
-  />
-)}
+              <MenuItem
+                icon={UserPlus}
+                label="Logout"
+                danger
+                onClick={handleLogout}
+              />
+            ) : (
+              <MenuItem
+                icon={UserPlus}
+                label="Login"
+                highlight
+                onClick={() => router.push("/signin")}
+              />
+            )}
           </div>
 
           {/* FOOTER */}
           <div className="border-t border-neutral-700 px-4 py-4 space-y-5">
-
             {/* THEME */}
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-neutral-300">Theme</h3>
 
               <div className="flex gap-2">
-                <ThemeButton icon={Sun} active={theme === "light"} onClick={() => setTheme("light")} />
-                <ThemeButton icon={Moon} active={theme === "dark"} onClick={() => setTheme("dark")} />
-                <ThemeButton icon={Monitor} active={theme === "system"} onClick={() => setTheme("system")} />
+                <ThemeButton
+                  icon={Sun}
+                  active={theme === "light"}
+                  onClick={() => setTheme("light")}
+                />
+                <ThemeButton
+                  icon={Moon}
+                  active={theme === "dark"}
+                  onClick={() => setTheme("dark")}
+                />
+                <ThemeButton
+                  icon={Monitor}
+                  active={theme === "system"}
+                  onClick={() => setTheme("system")}
+                />
               </div>
             </div>
 
@@ -151,7 +171,6 @@ const handleLogout = () => {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -161,7 +180,14 @@ const handleLogout = () => {
 
 /* ---------------- UI Components ---------------- */
 
-function MenuItem({ icon: Icon, label, shortcut, highlight, danger, onClick }: any) {
+function MenuItem({
+  icon: Icon,
+  label,
+  shortcut,
+  highlight,
+  danger,
+  onClick,
+}: any) {
   return (
     <button
       onClick={onClick}
@@ -169,8 +195,8 @@ function MenuItem({ icon: Icon, label, shortcut, highlight, danger, onClick }: a
         danger
           ? "text-red-400 font-semibold hover:bg-red-900/20"
           : highlight
-          ? "text-indigo-400 font-semibold"
-          : ""
+            ? "text-indigo-400 font-semibold"
+            : ""
       }`}
     >
       <div className="flex items-center gap-3">
