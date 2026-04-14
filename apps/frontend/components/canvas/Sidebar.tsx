@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
   Command,
   Trash2,
@@ -19,6 +20,10 @@ import {
 export default function Sidebar({ onClear }: any) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState("dark");
+  const router = useRouter();
+const params = useParams();
+
+const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     if (theme === "dark") {
@@ -36,10 +41,30 @@ export default function Sidebar({ onClear }: any) {
     }
   }, [theme]);
 
-  // ✅ CLEAR FUNCTION
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const isGuestRoute = params.roomId === "guest";
+
+  if (token && !isGuestRoute) {
+    setIsLoggedIn(true); // logged in user
+  } else {
+    setIsLoggedIn(false); // guest
+  }
+}, []);
+
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
+  router.push("/");
+};
+
+  //  CLEAR FUNCTION
   const clearCanvas = () => {
     if (confirm("Clear the entire canvas?")) {
-      onClear(); // 🔥 parent ko trigger karega
+      onClear(); //  parent ko trigger karega
     }
   };
 
@@ -74,7 +99,22 @@ export default function Sidebar({ onClear }: any) {
             <MenuItem icon={Download} label="Export Drawing" />
             <MenuItem icon={Upload} label="Import Drawing" />
             <MenuItem icon={Share2} label="Live collaboration" />
-            <MenuItem icon={UserPlus} label="Sign up" highlight />
+            
+            {isLoggedIn ? (
+  <MenuItem
+  icon={UserPlus}
+  label="Logout"
+  danger
+  onClick={handleLogout}
+/>
+) : (
+  <MenuItem
+    icon={UserPlus}
+    label="Login"
+    highlight
+    onClick={() => router.push("/signin")}
+  />
+)}
           </div>
 
           {/* FOOTER */}
@@ -121,12 +161,16 @@ export default function Sidebar({ onClear }: any) {
 
 /* ---------------- UI Components ---------------- */
 
-function MenuItem({ icon: Icon, label, shortcut, highlight, onClick }: any) {
+function MenuItem({ icon: Icon, label, shortcut, highlight, danger, onClick }: any) {
   return (
     <button
       onClick={onClick}
       className={`flex items-center justify-between w-full px-3 py-2.5 rounded-md text-sm transition hover:bg-neutral-700 ${
-        highlight ? "text-indigo-400 font-semibold" : ""
+        danger
+          ? "text-red-400 font-semibold hover:bg-red-900/20"
+          : highlight
+          ? "text-indigo-400 font-semibold"
+          : ""
       }`}
     >
       <div className="flex items-center gap-3">
