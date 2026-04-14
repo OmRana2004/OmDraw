@@ -164,17 +164,23 @@ export default function Home() {
     <ArrowRight className="w-4 h-4" />
   </Link>
 
-  <Link
-     href="/guest/0"
-    className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
-      isDark
-        ? "bg-white text-gray-900 hover:bg-gray-100"
-        : "bg-gray-900 text-white hover:bg-gray-800"
-    }`}
-  >
-    Guest
-    <ArrowRight className="w-4 h-4" />
-  </Link>
+  <button
+  onClick={() => {
+    localStorage.setItem(
+      "user",
+      JSON.stringify({ isGuest: true })
+    );
+    window.location.href = "/canvas/guest";
+  }}
+  className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg ${
+    isDark
+      ? "bg-white text-gray-900 hover:bg-gray-100"
+      : "bg-gray-900 text-white hover:bg-gray-800"
+  }`}
+>
+  Guest
+  <ArrowRight className="w-4 h-4" />
+</button>
 </div>
       </main>
     </div>
