@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 interface AuthPageProps {
   isSignin: boolean;
@@ -50,8 +51,8 @@ const handleSubmit = async (e: FormEvent) => {
 
   try {
     const endpoint = isSignin
-  ? `${API_BASE}/api/v1/signin`
-  : `${API_BASE}/api/v1/signup`;
+      ? `${API_BASE}/api/v1/signin`
+      : `${API_BASE}/api/v1/signup`;
 
     const body = isSignin
       ? { email, password }
@@ -66,39 +67,44 @@ const handleSubmit = async (e: FormEvent) => {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.message || "Something went wrong!");
-    } else {
-      alert(isSignin ? "Signed in successfully!" : "Account created successfully!");
-
-      if (data.token) {
-  localStorage.setItem("token", data.token);
-
-  // ✅ store user
-  localStorage.setItem(
-    "user",
-    JSON.stringify({
-      id: data.user?.id,
-      name: data.user?.name,
-      email: data.user?.email,
-      isGuest: false,
-    })
-  );
-
-  // ✅ notify sidebar
-  window.dispatchEvent(new Event("auth-changed"));
-
-  // ✅ always go to canvas
-  router.push("/canvas/1");
-}
+      toast.error(data.message || "Something went wrong!");
+      return;
     }
+
+    // ✅ SUCCESS MESSAGE
+    toast.success(isSignin ? "Signed in successfully!" : "Account created successfully!");
+
+    // ✅ SIGNUP FLOW → go to login
+    if (!isSignin) {
+      router.push("/signin");
+      return;
+    }
+
+    // ✅ SIGNIN FLOW → store data + redirect
+    localStorage.setItem("token", data.token);
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify({
+        id: data.user?.id,
+        name: data.user?.name,
+        email: data.user?.email,
+        isGuest: false,
+      })
+    );
+
+    // notify other components (like sidebar)
+    window.dispatchEvent(new Event("auth-changed"));
+
+    router.push("/canvas/1");
+
   } catch (error) {
     console.error("Auth error:", error);
-    alert("Network error. Please try again.");
+    toast.error("Network error. Please try again.");
   } finally {
     setLoading(false);
   }
 };
-
 
   return (
     <div

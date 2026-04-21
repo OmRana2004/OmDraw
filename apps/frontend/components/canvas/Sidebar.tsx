@@ -17,7 +17,7 @@ import {
   Menu,
 } from "lucide-react";
 
-export default function Sidebar({ onClear }: any) {
+export default function Sidebar({ onClear, onShare }: any) {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState("dark");
   const router = useRouter();
@@ -107,7 +107,11 @@ export default function Sidebar({ onClear }: any) {
             />
             <MenuItem icon={Download} label="Export Drawing" />
             <MenuItem icon={Upload} label="Import Drawing" />
-            <MenuItem icon={Share2} label="Live collaboration" />
+            <MenuItem
+              icon={Share2}
+              label="Live collaboration"
+              onClick={onShare}
+            />
 
             {isLoggedIn ? (
               <MenuItem
