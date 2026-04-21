@@ -1,12 +1,15 @@
-import dotenv from "dotenv";
-dotenv.config();
+
+import "dotenv/config";
+
+// ✅ Debug once
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 import { WebSocketServer, WebSocket } from "ws";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { prismaClient } from "@repo/db/client";
 import { WebSocketMessage, WsDataType } from "@repo/common";
+import { JWT_SECRET } from "@repo/backend-common/config";
 
-const JWT_SECRET = process.env.JWT_SECRET!;
 const PORT = Number(process.env.PORT) || 8080;
 
 const wss = new WebSocketServer({ port: PORT });
@@ -27,14 +30,22 @@ const connections: Connection[] = [];
 
 function authenticate(token: string): string | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-    if (!decoded || typeof decoded === "string" || !decoded.id) {
+    console.log("🔥 DECODED:", decoded);
+
+    if (!decoded || typeof decoded === "string") {
       return null;
     }
 
-    return decoded.id;
-  } catch {
+    return (
+      decoded.id ||
+      decoded.userId ||
+      decoded.user?.id ||
+      null
+    );
+  } catch (err) {
+    console.log("JWT ERROR:", err);
     return null;
   }
 }
@@ -121,31 +132,37 @@ wss.on("connection", (ws, req) => {
 
         /* -------- JOIN ROOM -------- */
 
-        case WsDataType.JOIN: {
+       case WsDataType.JOIN: {
 
-          const room = await prismaClient.room.findUnique({
-            where: { id: msg.roomId },
-          });
+  // ✅ FIX: create room safely (no race condition)
+  await prismaClient.room.upsert({
+    where: { id: msg.roomId },
+    update: {},
+    create: {
+      id: msg.roomId,
+      slug: msg.roomId,
+      admin: {
+        connect: {
+          id: connection.userId,
+        },
+      },
+    },
+  });
 
-          if (!room) {
-            ws.close();
-            return;
-          }
+  if (!connection.rooms.includes(msg.roomId)) {
+    connection.rooms.push(msg.roomId);
+  }
 
-          if (!connection.rooms.includes(msg.roomId)) {
-            connection.rooms.push(msg.roomId);
-          }
+  ws.send(
+    JSON.stringify({
+      type: WsDataType.USER_JOINED,
+      roomId: msg.roomId,
+      participants: getParticipants(msg.roomId),
+    })
+  );
 
-          ws.send(
-            JSON.stringify({
-              type: WsDataType.USER_JOINED,
-              roomId: msg.roomId,
-              participants: getParticipants(msg.roomId),
-            })
-          );
-
-          break;
-        }
+  break;
+}
 
         /* -------- LEAVE ROOM -------- */
 
@@ -171,13 +188,14 @@ wss.on("connection", (ws, req) => {
 
           if (!msg.message || !msg.id) return;
 
-          await prismaClient.chat.create({
-            data: {
-              roomId: msg.roomId,
-              userId: connection.userId,
-              message: JSON.stringify(msg.message),
-            },
-          });
+
+await prismaClient.chat.create({
+  data: {
+    roomId: msg.roomId,
+    userId: connection.userId,
+    message: JSON.stringify(msg.message),
+  },
+});
 
           broadcast(msg.roomId, msg);
 

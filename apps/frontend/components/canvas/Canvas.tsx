@@ -6,6 +6,8 @@ import { drawShapes, Shape } from "./draw";
 export default function Canvas({ tool, clearTrigger }: any) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const wsRef = useRef<WebSocket | null>(null);
+
   const [elements, setElements] = useState<Shape[]>([]);
   const [drawing, setDrawing] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -51,6 +53,42 @@ export default function Canvas({ tool, clearTrigger }: any) {
     window.addEventListener("resize", resizeCanvas);
     return () => window.removeEventListener("resize", resizeCanvas);
   }, []);
+
+  /* ---------------- WebSocket ---------------- */
+
+useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  const ws = new WebSocket(`ws://localhost:8080?token=${token}`);
+  wsRef.current = ws;
+
+  ws.onopen = () => {
+    console.log("WS Connected");
+
+    const roomId = window.location.pathname.split("/").pop();
+
+    ws.send(
+      JSON.stringify({
+        type: "JOIN",
+        roomId,
+      })
+    );
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    console.log("WS MESSAGE:", data);
+
+    if (data.type === "DRAW") {
+      setElements((prev) => [...prev, data.message]);
+    }
+  };
+
+  return () => {
+    ws.close();
+  };
+}, []);
 
   /* ---------------- Redraw ---------------- */
 
@@ -306,6 +344,39 @@ useEffect(() => {
     return updated;
   });
 }
+
+/* 
+       if (drawing) {
+  setElements((prev) => {
+    const updated = [...prev];
+    const last = updated[updated.length - 1];
+
+    if (last.type === "pencil") {
+      last.points?.push({ x, y });
+    } else {
+      updated[updated.length - 1] = {
+        ...last,
+        x2: x,
+        y2: y,
+      };
+    }
+
+    // ✅ SEND TO WS
+    const roomId = window.location.pathname.split("/").pop();
+
+    wsRef.current?.send(
+      JSON.stringify({
+        type: "DRAW",
+        roomId,
+        id: Date.now().toString(),
+        message: updated[updated.length - 1],
+      })
+    );
+
+    return updated;
+  });
+}
+*/
 
     if (dragging && selectedIndex !== null) {
       setElements((prev) => {
