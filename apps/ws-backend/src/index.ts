@@ -186,21 +186,30 @@ wss.on("connection", (ws, req) => {
 
         case WsDataType.DRAW: {
 
-          if (!msg.message || !msg.id) return;
+  if (!msg.message || !msg.id) return;
 
+  // ✅ Safety: ensure room exists
+  const room = await prismaClient.room.findUnique({
+    where: { id: msg.roomId },
+  });
 
-await prismaClient.chat.create({
-  data: {
-    roomId: msg.roomId,
-    userId: connection.userId,
-    message: JSON.stringify(msg.message),
-  },
-});
+  if (!room) {
+    console.log("Room missing, skipping DB save");
+    return;
+  }
 
-          broadcast(msg.roomId, msg);
+  await prismaClient.chat.create({
+    data: {
+      roomId: msg.roomId,
+      userId: connection.userId,
+      message: JSON.stringify(msg.message),
+    },
+  });
 
-          break;
-        }
+  broadcast(msg.roomId, msg);
+
+  break;
+}
 
         /* -------- UPDATE SHAPE -------- */
 

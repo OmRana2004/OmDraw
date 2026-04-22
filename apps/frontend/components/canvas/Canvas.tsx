@@ -5,8 +5,8 @@ import { drawShapes, Shape } from "./draw";
 
 export default function Canvas({ tool, clearTrigger }: any) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
   const wsRef = useRef<WebSocket | null>(null);
+  const currentShapeRef = useRef<Shape | null>(null);
 
   const [elements, setElements] = useState<Shape[]>([]);
   const [drawing, setDrawing] = useState(false);
@@ -76,14 +76,38 @@ useEffect(() => {
   };
 
   ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
+  const data = JSON.parse(event.data);
 
-    console.log("WS MESSAGE:", data);
+  console.log("WS MESSAGE:", data);
 
-    if (data.type === "DRAW") {
-      setElements((prev) => [...prev, data.message]);
+  // ✅ LIVE DRAWING
+  if (data.type === "UPDATE") {
+  setElements((prev) => {
+    const updated = [...prev];
+
+    const index = updated.findIndex(
+      (el) => el.id === data.shapeId
+    );
+
+    if (index !== -1) {
+      updated[index] = data.message;
+    } else {
+      updated.push(data.message); // first time
     }
-  };
+
+    return updated;
+  });
+}
+
+  // ✅ FINAL SHAPE
+  if (data.type === "DRAW") {
+  setElements((prev) => {
+    const exists = prev.find((el) => el.id === data.shapeId);
+    if (exists) return prev; // ✅ prevent duplicate
+    return [...prev, data.message];
+  });
+}
+};
 
   return () => {
     ws.close();
@@ -226,22 +250,32 @@ useEffect(() => {
     }
 
     if (tool === "text") {
-      setElements((prev) => [
-        ...prev,
-        { type: "text", x1: x, y1: y, textValue: "" },
-      ]);
-      setEditingTextIndex(elements.length);
-      return;
-    }
+  setElements((prev) => [
+    ...prev,
+    {
+      id: crypto.randomUUID(),
+      type: "text",
+      x1: x,
+      y1: y,
+      textValue: "",
+    },
+  ]);
+  setEditingTextIndex(elements.length);
+  return;
+}
 
     if (tool === "pencil") {
-      setElements((prev) => [
-        ...prev,
-        { type: "pencil", points: [{ x, y }] },
-      ]);
-      setDrawing(true);
-      return;
-    }
+  setElements((prev) => [
+    ...prev,
+    {
+      id: crypto.randomUUID(), // ✅ FIX
+      type: "pencil",
+      points: [{ x, y }],
+    },
+  ]);
+  setDrawing(true);
+  return;
+}
 
     if (tool === "select") {
       const reversed = [...elements].reverse();
@@ -272,7 +306,14 @@ useEffect(() => {
 
     setElements((prev) => [
       ...prev,
-      { type: tool, x1: x, y1: y, x2: x, y2: y },
+      {
+  id: crypto.randomUUID(),
+  type: tool,
+  x1: x,
+  y1: y,
+  x2: x,
+  y2: y,
+}
     ]);
 
     setDrawing(true);
@@ -298,55 +339,38 @@ useEffect(() => {
     }
 
     if (resizing && selectedIndex !== null) {
-      setElements((prev) => {
-        const updated = [...prev];
-        const el = updated[selectedIndex];
-
-        switch (resizeHandle) {
-          case 0:
-            el.x1 = x;
-            el.y1 = y;
-            break;
-          case 1:
-            el.x2 = x;
-            el.y1 = y;
-            break;
-          case 2:
-            el.x1 = x;
-            el.y2 = y;
-            break;
-          case 3:
-            el.x2 = x;
-            el.y2 = y;
-            break;
-        }
-
-        return updated;
-      });
-      return;
-    }
-
-    if (drawing) {
   setElements((prev) => {
     const updated = [...prev];
-    const last = updated[updated.length - 1];
+    const el = updated[selectedIndex];
 
-    if (last.type === "pencil") {
-      last.points?.push({ x, y }); // ✅ add new point
-    } else {
-      updated[updated.length - 1] = {
-        ...last,
-        x2: x,
-        y2: y,
-      };
+    switch (resizeHandle) {
+      case 0:
+        el.x1 = x;
+        el.y1 = y;
+        break;
+      case 1:
+        el.x2 = x;
+        el.y1 = y;
+        break;
+      case 2:
+        el.x1 = x;
+        el.y2 = y;
+        break;
+      case 3:
+        el.x2 = x;
+        el.y2 = y;
+        break;
     }
+
+    // ✅ FIX
+    currentShapeRef.current = updated[selectedIndex];
 
     return updated;
   });
+  return;
 }
 
-/* 
-       if (drawing) {
+    if (drawing) {
   setElements((prev) => {
     const updated = [...prev];
     const last = updated[updated.length - 1];
@@ -361,22 +385,26 @@ useEffect(() => {
       };
     }
 
-    // ✅ SEND TO WS
+    const current = updated[updated.length - 1];
+
+    currentShapeRef.current = current;
+
     const roomId = window.location.pathname.split("/").pop();
 
-    wsRef.current?.send(
-      JSON.stringify({
-        type: "DRAW",
-        roomId,
-        id: Date.now().toString(),
-        message: updated[updated.length - 1],
-      })
-    );
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "UPDATE",
+          roomId,
+          shapeId: current.id,
+          message: current,
+        })
+      );
+    }
 
     return updated;
   });
 }
-*/
 
     if (dragging && selectedIndex !== null) {
       setElements((prev) => {
@@ -405,13 +433,35 @@ useEffect(() => {
   /* ---------------- Mouse Up ---------------- */
 
   const handleMouseUp = () => {
-    setDrawing(false);
-    setDragging(false);
-    setResizing(false);
-    setResizeHandle(null);
-    setPanning(false);
-    setErasing(false);
-  };
+  if (drawing) {
+    const roomId = window.location.pathname.split("/").pop();
+    const last = currentShapeRef.current;
+
+    if (!last) return;
+
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "DRAW",
+          roomId,
+          shapeId: last.id,
+          id: crypto.randomUUID(),
+          message: last,
+        })
+      );
+    }
+  }
+
+  // ✅ RESET
+  currentShapeRef.current = null;
+
+  setDrawing(false);
+  setDragging(false);
+  setResizing(false);
+  setResizeHandle(null);
+  setPanning(false);
+  setErasing(false);
+};
 
   /* ---------------- UI ---------------- */
 

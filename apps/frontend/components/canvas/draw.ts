@@ -1,6 +1,8 @@
 import rough from "roughjs";
 
 export type Shape = {
+  id: string; // ✅ REQUIRED for realtime sync
+
   type:
     | "rectangle"
     | "circle"
@@ -45,7 +47,7 @@ export function drawShapes(
       stroke: strokeColor,
     };
 
-    // RECTANGLE
+    /* ---------------- RECTANGLE ---------------- */
     if (el.type === "rectangle" && el.x1 !== undefined) {
       const x = el.x1;
       const y = el.y1!;
@@ -70,7 +72,7 @@ export function drawShapes(
       rc.path(path, options);
     }
 
-    // CIRCLE
+    /* ---------------- CIRCLE ---------------- */
     if (el.type === "circle" && el.x1 !== undefined) {
       const radius = Math.sqrt(
         (el.x2! - el.x1!) ** 2 + (el.y2! - el.y1!) ** 2
@@ -79,12 +81,12 @@ export function drawShapes(
       rc.circle(el.x1, el.y1!, radius * 2, options);
     }
 
-    // LINE
+    /* ---------------- LINE ---------------- */
     if (el.type === "line" && el.x1 !== undefined) {
       rc.line(el.x1, el.y1!, el.x2!, el.y2!, options);
     }
 
-    // DIAMOND
+    /* ---------------- DIAMOND ---------------- */
     if (el.type === "diamond" && el.x1 !== undefined) {
       const midX = (el.x1 + el.x2!) / 2;
       const midY = (el.y1! + el.y2!) / 2;
@@ -100,7 +102,7 @@ export function drawShapes(
       );
     }
 
-    // ARROW
+    /* ---------------- ARROW ---------------- */
     if (el.type === "arrow" && el.x1 !== undefined) {
       rc.line(el.x1, el.y1!, el.x2!, el.y2!, options);
 
@@ -121,7 +123,7 @@ export function drawShapes(
       rc.line(el.x2!, el.y2!, arrow2[0], arrow2[1], options);
     }
 
-    // PENCIL
+    /* ---------------- PENCIL ---------------- */
     if (el.type === "pencil" && el.points) {
       ctx.beginPath();
       ctx.lineWidth = 2;
@@ -136,8 +138,12 @@ export function drawShapes(
       ctx.stroke();
     }
 
-    // TEXT
-    if (el.type === "text" && el.x1 !== undefined && el.textValue !== undefined) {
+    /* ---------------- TEXT ---------------- */
+    if (
+      el.type === "text" &&
+      el.x1 !== undefined &&
+      el.textValue !== undefined
+    ) {
       const textColor = isDark ? "#f59e0b" : "#d97706";
 
       ctx.font = "28px Caveat, cursive";
